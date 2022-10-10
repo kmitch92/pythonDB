@@ -71,14 +71,6 @@ class DBOperations:
     finally: 
       self.conn.close()
 
-  
-    #     elif answer == 'n':
-    #       input("Press 'ENTER' to return to the main menu")
-    #   else:
-    #     print ("Employee not found")
-    #     input("Press 'ENTER' to exit: ")
-
-
   def select_table(self):
     try:
       os.system('cls' if os.name == 'nt' else 'clear')
@@ -181,7 +173,6 @@ class DBOperations:
     finally:
       self.conn.close()
 
-
   def update_data(self):
     try:
       self.get_connection()
@@ -253,8 +244,7 @@ class DBOperations:
       input("Press 'ENTER' to exit: ")
     finally:
       self.conn.close()
-
-# Define Delete_data method to delete data from the table. The user will need to input the employee id to delete the corrosponding record. 
+ 
   def delete_data(self):
     try:
       self.get_connection()
@@ -288,18 +278,13 @@ class DBOperations:
     finally: 
       self.conn.close()
 
-    
 class Employee:
   def __init__(self):
-#    self.employeeID = 0
     self.Title = ''
     self.forename = ''
     self.surname = ''
     self.email = ''
     self.salary = 0
-
-  # def set_employee_id(self, employeeID):
-  #   self.employeeID = employeeID
 
   def set_title(self, Title):
     self.Title = Title
@@ -315,9 +300,6 @@ class Employee:
   
   def set_salary(self,salary):
     self.salary = salary
-  
-  # def get_employee_id(self):
-  #   return self.employeeId
 
   def get_title(self):
     return self.Title
