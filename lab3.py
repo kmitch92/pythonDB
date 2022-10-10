@@ -18,8 +18,8 @@ import time
 class DBOperations:
 
 # Adds EmployeeID as auto-incrementing primary key. This removes potential for insert errors.  
-  current_tables = []
-  target_table = ''
+  current_tables = ['Employees']
+  target_table = 0
   sql_create_table1 = "CREATE TABLE IF NOT EXISTS "     
   sql_create_table2 = """ (
      EmployeeID INTEGER PRIMARY KEY AUTOINCREMENT, Title VARCHAR(5), Forename VARCHAR(30), Surname VARCHAR(30), Email VARCHAR(80), SALARY INTEGER
@@ -39,7 +39,6 @@ class DBOperations:
       self.conn = sqlite3.connect("DBEmployees.db")
       self.cur = self.conn.cursor()
       self.cur.execute(self.sql_create_table1,'Employees',self.sql_create_table2)
-      self.current_tables.append('Employees')
       self.target_table = self.current_tables[0]
       self.conn.commit()
     except Exception as e:
@@ -56,8 +55,8 @@ class DBOperations:
       os.system('cls' if os.name == 'nt' else 'clear')
       print ("*****************************************************************\n")
       print("Current existing tables: ")
-      for table, index in self.current_tables:
-        print(str(index+1)+". "+table)
+      for table in self.current_tables:
+        print(str(table))
       new_table = input("Please enter the name of the table that you would like to CREATE: ")
       self.get_connection()
       self.cur.execute(self.sql_create_table1+ new_table+ self.sql_create_table2)
@@ -74,18 +73,25 @@ class DBOperations:
   def select_table(self):
     try:
       os.system('cls' if os.name == 'nt' else 'clear')
-      for val, index in self.current_tables:
-        print((index+1)+': Table: ' + val)
-      table_select = ''
-      while int(table_select) not in range(len(self.current_tables)):
-        table_select=str(input('Select target table number: '))
+      print("Existing Tables: ")
+      for val in self.current_tables:
+        print(val)
+      table_select = 0
+      print("Enter 'x' to exit")
+      while not int(table_select) or int(table_select) not in range(len(self.current_tables)) or table_select == 'x':
 
-      print("Changed target table")
-      input("Press 'ENTER' to exit: ")
+        table_select=str(input('Select target table number: '))
+      if table_select=='x':
+        self.conn.close()
+      else:
+        self.target_table = table_select
+        print("Changed target table")
+        input("Press 'ENTER' to exit: ")
     except Exception as e:
       print(e)
       input("Press 'ENTER' to exit: ")
     finally:
+      input("Press 'ENTER' to exit: ")
       self.conn.close()
 
   def insert_data(self):
