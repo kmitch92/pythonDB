@@ -6,32 +6,22 @@ import time
 
 ############ TO-DO ###############
 #                                #
-#  add drop table functionality  #
-#  add confirm for big choices   #
 #  use imports not one big page  #
-#  add admin username and pass   #
 #  check for tips on CLI beaut   #
 #                                #
 ##################################
 
-
+target_table = 0
 
 class DBOperations:
 
 # Adds EmployeeID as auto-incrementing primary key. This removes potential for insert errors.  
-  target_table = 0
+  
   current_tables=[]
   sql_create_table1 = "CREATE TABLE IF NOT EXISTS "     
   sql_create_table2 = """ (
      EmployeeID INTEGER PRIMARY KEY AUTOINCREMENT, Title VARCHAR(5), Forename VARCHAR(30), Surname VARCHAR(30), Email VARCHAR(80), SALARY INTEGER
   );"""     
-  sql_insert = """INSERT INTO Employees (Title,Forename,Surname,Email,Salary)
-  VALUES
-  ("""
-  sql_select_all = "SELECT * FROM Employees;"
-  sql_search = "SELECT * FROM Employees WHERE "
-  sql_update_data = """UPDATE Employees
-  SET """
   sql_delete_data = "DELETE FROM "
   sql_drop_table = ""
  
@@ -42,15 +32,11 @@ class DBOperations:
       self.cur.execute(self.sql_create_table1+'Employees'+self.sql_create_table2)
       self.current_tables = self.get_current_tables()
       self.conn.commit()
-      self.set_target(0)
     except Exception as e:
-      print(e)
+      print(e, ': __init__')
     finally:
-      print("created Employees for init")
       self.conn.close()
-
-  def set_target(self, target):
-    self.target_table = target    
+  
 
   def get_connection(self):
     self.conn = sqlite3.connect("DBEmployees.db")
@@ -104,6 +90,7 @@ class DBOperations:
       self.conn.close()
 
   def select_table(self):
+    global target_table
     try:
       os.system('cls' if os.name == 'nt' else 'clear')
       print("Existing Tables: ")
@@ -113,28 +100,21 @@ class DBOperations:
         print(str(count) + ': ' +str(table))
         count +=1
       print ("*****************************************************************")
-      print("Current table: " + str(self.current_tables[self.target_table]))
+      print("Current table: " + str(self.current_tables[target_table]))
       print ("*****************************************************************\n")
-      print("current self.target_table: " + str(self.target_table))
-      ans = ''
-      while ans not in ['y','n']:
-        ans = input("Do you want to change table? (y/n): ")
-      
-      if ans =='n':
-        input("Press 'ENTER' to exit: ")
-      elif ans =='y':
-        table_select = 999
-        while table_select not in range(len(self.current_tables)):
-          table_select=int(input('Select target table number: '))
-        self.set_target(int(table_select))
-        print("Changed target table")
-        print(str(self.target_table))
-        input("Press 'ENTER' to exit: ")
+      print("current self.target_table: " + str(target_table))
+      table_select = 999
+      while table_select not in range(len(self.current_tables)):
+        table_select=int(input('Select target table number: '))
+      target_table=int(table_select)
+      print("Changed target table to: " + str(target_table) +": "+ str(self.current_tables[target_table]))
+      input("Press 'ENTER' to exit: ")
     except Exception as e:
       print(e)
       input("Press 'ENTER' to exit: ")
 
   def insert_data(self):
+    global target_table
     try:
       self.get_connection()
       os.system('cls' if os.name == 'nt' else 'clear')
@@ -144,9 +124,8 @@ class DBOperations:
       emp.set_surname(str(input("Enter employee surname: ")))
       emp.set_email(str(input("Enter employee email: ")))
       emp.set_salary(int(input("Enter employee salary: ")))    
-      print(self.sql_insert + ' ,'.join(str(emp).split('\n')) + ');')
-
-      self.cur.execute(self.sql_insert + ' "'+'" ,"'.join(str(emp).split('\n')) + '");')
+      table = self.current_tables[target_table]
+      self.cur.execute("INSERT INTO "+table+" (Title,Forename,Surname,Email,Salary) VALUES(" + ' "'+'" ,"'.join(str(emp).split('\n')) + '");')
       self.conn.commit()
       print("Inserted data successfully")
       input("Press 'ENTER' to exit: ")
@@ -157,11 +136,13 @@ class DBOperations:
       self.conn.close()
 
   def select_all(self):
+    global target_table
     try:
       self.get_connection()
-      targ = self.target_table
-      res1 = self.current_tables[int(targ)]
+      res1 = self.current_tables[int(target_table)]
+      print(res1)
       res = str(res1).strip("('',)")
+      print(res)
       self.cur.execute("SELECT * FROM "+res+';')
       results = self.cur.fetchall()
       printHeaderMultiple(results)
@@ -172,6 +153,7 @@ class DBOperations:
       self.conn.close()
     
   def search_data(self):
+    global target_table
     try:
       self.get_connection()
       os.system('cls' if os.name == 'nt' else 'clear')
@@ -188,6 +170,7 @@ class DBOperations:
       key = int(input("Enter Selection: "))
       searchTerm = terms[key]
       modifier = ' = '
+      table = self.current_tables[target_table]
       os.system('cls' if os.name == 'nt' else 'clear')
       if int(key) == 6:
         mods = {1: " > ", 2: " >= ", 3: " = ", 4:" < ", 5:" <= "}
@@ -203,7 +186,7 @@ class DBOperations:
  
       searchValue = input("Enter query value: ")
       sqlSearchStringEnd = searchTerm+modifier+searchValue +";"
-      self.cur.execute(self.sql_search + sqlSearchStringEnd)
+      self.cur.execute("SELECT * FROM "+table+" WHERE " + sqlSearchStringEnd)
       results = self.cur.fetchall()
       if type(results) == type(list()):
         printHeaderMultiple(results)
@@ -222,13 +205,15 @@ class DBOperations:
       self.conn.close()
 
   def update_data(self):
+    global target_table
     try:
       self.get_connection()
       os.system('cls' if os.name == 'nt' else 'clear')
       print ("*****************************************************************\n")
       print("Please enter the employee ID for the record that you would like to UPDATE : ")
       empID = int(input("Employee ID: "))
-      self.cur.execute(self.sql_search+"EmployeeID="+str(empID)+";")
+      table = self.current_tables[target_table]     
+      self.cur.execute("SELECT * FROM "+table+" WHERE EmployeeID="+str(empID)+";")
       result = self.cur.fetchone()
       if type(result)==type(tuple()):
         print ("Employee found")
@@ -266,12 +251,13 @@ class DBOperations:
           terms['Salary']=str(input("Enter updated value: "))
     
 
-        sqlStatement = self.sql_update_data
+        sqlStatement = "UPDATE "+table+" SET "
         for key in terms:
           if terms[key]:
             sqlStatement += (str(key)+'="'+str(terms[key])+'", ')
         sqlStatement = sqlStatement[:-2]
-        sqlStatement += (' WHERE EmployeeID = ' + str(empID)+ ' RETURNING *;')  
+        sqlStatement += (' WHERE EmployeeID = ' + str(empID)+' RETURNING *;')  
+        print(sqlStatement)
         self.cur.execute(sqlStatement)
         result = self.cur.fetchone()
         if type(result)==type(tuple()):
@@ -454,13 +440,12 @@ def printHeaderMultiple(results):
 # The user will select a choice from the menu to interact with the database.
   
 while True:
-
-  # result = db_ops.get_current_tables()
-  # targetVal = db_ops.target_table
-  # print("Tables: "+str(result))
-  # print("TargetVal: " + str(targetVal))
-  # print("Target: " + str(result[targetVal]))
   os.system('cls' if os.name == 'nt' else 'clear')
+
+  db_ops = DBOperations()
+  result = db_ops.get_current_tables()
+  print("Current Table: " + str(result[target_table]))
+
   print ("\n Menu:")
   print ("*****************************************************************\n")
   print (" 1. Create New Table")
@@ -474,7 +459,7 @@ while True:
   print (" 9. Exit\n")
 
   __choose_menu = int(input("Enter your choice: "))
-  db_ops = DBOperations()
+
   if __choose_menu == 1:
     db_ops.create_table()
   elif __choose_menu == 2:
