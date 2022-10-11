@@ -1,7 +1,6 @@
-from operator import index
-from pickletools import read_string1
 import sqlite3
 import os
+from prints import printHeaderMultiple, printHeaderSingle
 
 #############-GLOBAL VARIABLE FOR TARGETING TABLES WITHIN DB#########################################################
 target_table = 0
@@ -21,8 +20,10 @@ class DBOperations:
       self.cur.execute(self.sql_create_table1+'Employees'+self.sql_create_table2)
       self.current_tables = self.get_current_tables()
       self.conn.commit()
+
     except Exception as e:
       return
+
     finally:
       self.conn.close()
 
@@ -33,25 +34,19 @@ class DBOperations:
   def get_current_tables(self):
     try:
       self.get_connection()
-      self.cur.execute("""SELECT 
-      name
-  FROM 
-      sqlite_master
-  WHERE 
-      type ='table' AND 
-      name NOT LIKE 'sqlite_%';""")
+      self.cur.execute("SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%';")
       results = self.cur.fetchall()
-      
       cleaned = []
       for result in results:
         cleaned.append(str(result).strip("('',)"))
       self.current_tables = cleaned
       return cleaned
+
     except Exception as e:
       print(e)
+
     finally: 
       self.conn.close()
-
 
   def create_table(self):
     try:
@@ -71,9 +66,11 @@ class DBOperations:
       print("Table created successfully")
       print(str(self.get_current_tables()))
       input("Press 'ENTER' to exit: ")
+
     except Exception as e:
       print(e)
       input("Press 'ENTER' to exit: ")
+    
     finally: 
       self.conn.close()
 
@@ -94,6 +91,7 @@ class DBOperations:
       target_table=int(table_select)
       print("Changed target table to: " + str(target_table) +": "+ str(self.current_tables[target_table]))
       input("Press 'ENTER' to exit: ")
+
     except Exception as e:
       print(e)
       input("Press 'ENTER' to exit: ")
@@ -114,9 +112,11 @@ class DBOperations:
       self.conn.commit()
       print("Inserted data successfully")
       input("Press 'ENTER' to exit: ")
+
     except Exception as e:
       print(e)
       input("Press 'ENTER' to exit: ")
+    
     finally:
       self.conn.close()
 
@@ -131,8 +131,10 @@ class DBOperations:
       self.cur.execute("SELECT * FROM "+res+';')
       results = self.cur.fetchall()
       printHeaderMultiple(results)
+
     except Exception as e:
       print(e)
+    
     finally:
       input("Press 'ENTER' to exit: ")
       self.conn.close()
@@ -168,7 +170,6 @@ class DBOperations:
         print(" 5. Salary LESS than OR EQUAL to VALUE\n")
         modKey = int(input("Enter search modifier value: "))
         modifier=mods[modKey]
- 
       searchValue = input("Enter query value: ")
       sqlSearchStringEnd = searchTerm+modifier+searchValue +";"
       self.cur.execute("SELECT * FROM "+table+" WHERE " + sqlSearchStringEnd)
@@ -176,7 +177,6 @@ class DBOperations:
       if type(results) == type(list()):
         printHeaderMultiple(results)
         input("Press 'ENTER' to exit: ")
-
       else:
         os.system('cls' if os.name == 'nt' else 'clear')
         print ("No Record")
@@ -186,6 +186,7 @@ class DBOperations:
             
     except Exception as e:
       print(e)
+
     finally:
       self.conn.close()
 
@@ -262,6 +263,7 @@ class DBOperations:
     except Exception as e:
       print(e)
       input("Press 'ENTER' to exit: ")
+
     finally:
       self.conn.close()
  
@@ -294,9 +296,11 @@ class DBOperations:
       else:
         print ("Employee not found")
         input("Press 'ENTER' to exit: ")
+    
     except Exception as e:
       print(e)
       input("Press 'ENTER' to exit: ")
+
     finally: 
       self.conn.close()
 
@@ -339,6 +343,7 @@ class DBOperations:
             self.get_connection()  
             self.cur.execute("DROP TABLE IF EXISTS "+ str(table).strip("('',)")+';')
             self.conn.commit()  
+
     except Exception as e:
       print(e)
       
@@ -346,46 +351,8 @@ class DBOperations:
       input("press 'ENTER' to exit." )
       self.conn.close()
 
-# Various Print Statements
-
-def printHeader():
-  os.system('cls' if os.name == 'nt' else 'clear')
-  print("===================================================================================================")
-  print("|| ID || TITLE || FORENAME ||     SURNAME     ||               EMAIL               ||   SALARY   ||")
-  print("===================================================================================================")
-
-def printHeaderSingle(result):
-  os.system('cls' if os.name == 'nt' else 'clear')
-  print("===================================================================================================")
-  print("|| ID || TITLE || FORENAME ||     SURNAME     ||               EMAIL               ||   SALARY   ||")
-  print("===================================================================================================")
-  id = str(result[0])
-  title = str(result[1])
-  forename=str(result[2])
-  surname=str(result[3])
-  email=str(result[4])
-  salary=str(result[5])
-  print('|| '+ id+ ((2-len(id))*' ')+' || '+title[:5]+((5-len(title))*' ')+' || '+forename[:8]+((8-len(forename))*' ')+' ||   '+surname[:11]+((11-len(surname))*' ')+'   ||        '+email[:19]+((19-len(email))*' ')+'        ||  '+salary[:8]+((8-len(salary))*' ')+'  || ')
-  print("===================================================================================================")
-
-def printHeaderMultiple(results):
-  os.system('cls' if os.name == 'nt' else 'clear')
-  print("===================================================================================================")
-  print("|| ID || TITLE || FORENAME ||     SURNAME     ||               EMAIL               ||   SALARY   ||")
-  print("===================================================================================================")
-  for result in results:
-    id = str(result[0])
-    title = str(result[1])
-    forename=str(result[2])
-    surname=str(result[3])
-    email=str(result[4])
-    salary=str(result[5])
-    print('|| '+ id+ ((2-len(id))*' ')+' || '+title[:5]+((5-len(title))*' ')+' || '+forename[:8]+((8-len(forename))*' ')+' ||   '+surname[:11]+((11-len(surname))*' ')+'   ||        '+email[:19]+((19-len(email))*' ')+'        ||  '+salary[:8]+((8-len(salary))*' ')+'  || ')
-    print("===================================================================================================")
-
 while True:
   os.system('cls' if os.name == 'nt' else 'clear')
-
   db_ops = DBOperations()
   result = db_ops.get_current_tables()
   print("Current Table: " + str(result[target_table]))
