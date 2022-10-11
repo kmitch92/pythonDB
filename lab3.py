@@ -1,4 +1,5 @@
 from operator import index
+from pickletools import read_string1
 import sqlite3
 import os
 import time
@@ -18,8 +19,8 @@ import time
 class DBOperations:
 
 # Adds EmployeeID as auto-incrementing primary key. This removes potential for insert errors.  
-  current_tables = ['Employees']
   target_table = 0
+  current_tables=[]
   sql_create_table1 = "CREATE TABLE IF NOT EXISTS "     
   sql_create_table2 = """ (
      EmployeeID INTEGER PRIMARY KEY AUTOINCREMENT, Title VARCHAR(5), Forename VARCHAR(30), Surname VARCHAR(30), Email VARCHAR(80), SALARY INTEGER
@@ -38,31 +39,63 @@ class DBOperations:
     try:
       self.conn = sqlite3.connect("DBEmployees.db")
       self.cur = self.conn.cursor()
-      self.cur.execute(self.sql_create_table1,'Employees',self.sql_create_table2)
-      self.target_table = self.current_tables[0]
+      self.cur.execute(self.sql_create_table1+'Employees'+self.sql_create_table2)
+      self.current_tables = self.get_current_tables()
       self.conn.commit()
+      self.set_target(0)
     except Exception as e:
       print(e)
     finally:
+      print("created Employees for init")
       self.conn.close()
+
+  def set_target(self, target):
+    self.target_table = target    
 
   def get_connection(self):
     self.conn = sqlite3.connect("DBEmployees.db")
     self.cur = self.conn.cursor()
+
+  def get_current_tables(self):
+    try:
+      self.get_connection()
+      self.cur.execute("""SELECT 
+      name
+  FROM 
+      sqlite_master
+  WHERE 
+      type ='table' AND 
+      name NOT LIKE 'sqlite_%';""")
+      results = self.cur.fetchall()
+      
+      cleaned = []
+      for result in results:
+        cleaned.append(str(result).strip("('',)"))
+      self.current_tables = cleaned
+      return cleaned
+    except Exception as e:
+      print(e)
+    finally: 
+      self.conn.close()
+
 
   def create_table(self):
     try:
       os.system('cls' if os.name == 'nt' else 'clear')
       print ("*****************************************************************\n")
       print("Current existing tables: ")
+      count = 0
       for table in self.current_tables:
-        print(str(table))
+        print(str(count) + ': ' +str(table))
+        count +=1
       new_table = input("Please enter the name of the table that you would like to CREATE: ")
+      
       self.get_connection()
       self.cur.execute(self.sql_create_table1+ new_table+ self.sql_create_table2)
       self.current_tables.append(new_table)
       self.conn.commit()
       print("Table created successfully")
+      print(str(self.get_current_tables()))
       input("Press 'ENTER' to exit: ")
     except Exception as e:
       print(e)
@@ -74,25 +107,32 @@ class DBOperations:
     try:
       os.system('cls' if os.name == 'nt' else 'clear')
       print("Existing Tables: ")
-      for val in self.current_tables:
-        print(val)
-      table_select = 0
-      print("Enter 'x' to exit")
-      while not int(table_select) or int(table_select) not in range(len(self.current_tables)) or table_select == 'x':
-
-        table_select=str(input('Select target table number: '))
-      if table_select=='x':
-        self.conn.close()
-      else:
-        self.target_table = table_select
+      print ("*****************************************************************")
+      count = 0
+      for table in self.current_tables:
+        print(str(count) + ': ' +str(table))
+        count +=1
+      print ("*****************************************************************")
+      print("Current table: " + str(self.current_tables[self.target_table]))
+      print ("*****************************************************************\n")
+      print("current self.target_table: " + str(self.target_table))
+      ans = ''
+      while ans not in ['y','n']:
+        ans = input("Do you want to change table? (y/n): ")
+      
+      if ans =='n':
+        input("Press 'ENTER' to exit: ")
+      elif ans =='y':
+        table_select = 999
+        while table_select not in range(len(self.current_tables)):
+          table_select=int(input('Select target table number: '))
+        self.set_target(int(table_select))
         print("Changed target table")
+        print(str(self.target_table))
         input("Press 'ENTER' to exit: ")
     except Exception as e:
       print(e)
       input("Press 'ENTER' to exit: ")
-    finally:
-      input("Press 'ENTER' to exit: ")
-      self.conn.close()
 
   def insert_data(self):
     try:
@@ -119,14 +159,16 @@ class DBOperations:
   def select_all(self):
     try:
       self.get_connection()
-      self.cur.execute(self.sql_select_all)
+      targ = self.target_table
+      res1 = self.current_tables[int(targ)]
+      res = str(res1).strip("('',)")
+      self.cur.execute("SELECT * FROM "+res+';')
       results = self.cur.fetchall()
       printHeaderMultiple(results)
-      input("Press 'ENTER' to exit: ")
-
     except Exception as e:
       print(e)
     finally:
+      input("Press 'ENTER' to exit: ")
       self.conn.close()
     
   def search_data(self):
@@ -272,7 +314,7 @@ class DBOperations:
           printHeaderSingle(result)
           print("Record deleted.")
           input('Press "ENTER" to exit: ')
-  
+
         elif answer == 'n':
           input("Press 'ENTER' to return to the main menu")
       else:
@@ -282,6 +324,52 @@ class DBOperations:
       print(e)
       input("Press 'ENTER' to exit: ")
     finally: 
+      self.conn.close()
+
+  def delete_tables(self):
+    try:
+      self.get_connection()
+      os.system('cls' if os.name == 'nt' else 'clear')
+      print ("*****************************************************************\n")
+      self.current_tables = self.get_current_tables()
+      print('1. Delete a single table')
+      print('2. Delete all tables (reset the Database)')
+      print('3. Exit')
+      select = ''
+      while select not in ['1','2','3']:
+        select = input("Choose which action you would like to take.")
+      if select == '3':
+        return
+      elif select == '1':
+        count = 0
+        for table in self.current_tables:
+          print(str(count)+': '+ str(table).strip("('',)"))
+          count+=1
+        select = 999
+        while int(select) not in range(len(self.current_tables)):
+          select = input("Choose which table you would like to delete: ")
+        res1 = self.current_tables[int(select)]
+        res = str(res1).strip("('',)")
+        self.get_connection()
+        self.cur.execute("DROP TABLE IF EXISTS "+res+';')
+        self.conn.commit()
+        print('Table: ' + res + " has been deleted.")
+      elif select =='2':
+ 
+        count = 0
+        answer=''
+        while answer not in ['y','n']:
+         answer =input("Do you wish to DELETE ALL TABLES? (Employees table will be re-initialised) (y/n): ")
+        if answer == 'y':
+          for table in self.current_tables:
+            self.get_connection()  
+            self.cur.execute("DROP TABLE IF EXISTS "+ str(table).strip("('',)")+';')
+            self.conn.commit()  
+    except Exception as e:
+      print(e)
+      
+    finally:
+      input("press 'ENTER' to exit." )
       self.conn.close()
 
 class Employee:
@@ -367,17 +455,23 @@ def printHeaderMultiple(results):
   
 while True:
 
+  # result = db_ops.get_current_tables()
+  # targetVal = db_ops.target_table
+  # print("Tables: "+str(result))
+  # print("TargetVal: " + str(targetVal))
+  # print("Target: " + str(result[targetVal]))
   os.system('cls' if os.name == 'nt' else 'clear')
   print ("\n Menu:")
   print ("*****************************************************************\n")
-  print (" 1. Create new table")
-  print (" 2. Change table")
-  print (" 3. Add new employee")
-  print (" 4. Show all employees")
-  print (" 5. Search employees")
-  print (" 6. Update data")
-  print (" 7. Delete data")
-  print (" 8. Exit\n")
+  print (" 1. Create New Table")
+  print (" 2. Change Table")
+  print (" 3. Add New Employee")
+  print (" 4. Show All Employees")
+  print (" 5. Search Employees")
+  print (" 6. Update Data")
+  print (" 7. Delete Data")
+  print (" 8. Delete Tables")
+  print (" 9. Exit\n")
 
   __choose_menu = int(input("Enter your choice: "))
   db_ops = DBOperations()
@@ -396,6 +490,8 @@ while True:
   elif __choose_menu == 7:
     db_ops.delete_data()
   elif __choose_menu == 8:
+    db_ops.delete_tables()
+  elif __choose_menu == 9:
     exit(0)
   else:
     print ("Invalid Choice")
