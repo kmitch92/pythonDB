@@ -2,28 +2,17 @@ from operator import index
 from pickletools import read_string1
 import sqlite3
 import os
-import time
 
-############ TO-DO ###############
-#                                #
-#  use imports not one big page  #
-#  check for tips on CLI beaut   #
-#                                #
-##################################
-
+#############-GLOBAL VARIABLE FOR TARGETING TABLES WITHIN DB#########################################################
 target_table = 0
+#####################################################################################################################
 
-class DBOperations:
-
-# Adds EmployeeID as auto-incrementing primary key. This removes potential for insert errors.  
-  
+class DBOperations:  
   current_tables=[]
   sql_create_table1 = "CREATE TABLE IF NOT EXISTS "     
   sql_create_table2 = """ (
      EmployeeID INTEGER PRIMARY KEY AUTOINCREMENT, Title VARCHAR(5), Forename VARCHAR(30), Surname VARCHAR(30), Email VARCHAR(80), SALARY INTEGER
   );"""     
-  sql_delete_data = "DELETE FROM "
-  sql_drop_table = ""
  
   def __init__(self):
     try:
@@ -33,10 +22,9 @@ class DBOperations:
       self.current_tables = self.get_current_tables()
       self.conn.commit()
     except Exception as e:
-      print(e, ': __init__')
+      return
     finally:
       self.conn.close()
-  
 
   def get_connection(self):
     self.conn = sqlite3.connect("DBEmployees.db")
@@ -68,7 +56,7 @@ class DBOperations:
   def create_table(self):
     try:
       os.system('cls' if os.name == 'nt' else 'clear')
-      print ("*****************************************************************\n")
+      print ("*"*30+"\n")
       print("Current existing tables: ")
       count = 0
       for table in self.current_tables:
@@ -94,15 +82,12 @@ class DBOperations:
     try:
       os.system('cls' if os.name == 'nt' else 'clear')
       print("Existing Tables: ")
-      print ("*****************************************************************")
+      print ("*"*30)
       count = 0
       for table in self.current_tables:
         print(str(count) + ': ' +str(table))
         count +=1
-      print ("*****************************************************************")
-      print("Current table: " + str(self.current_tables[target_table]))
-      print ("*****************************************************************\n")
-      print("current self.target_table: " + str(target_table))
+      print ("*"*30 + "\n" + "Current table: " + str(self.current_tables[target_table]) + "\n" + "*"*30 + "\n")
       table_select = 999
       while table_select not in range(len(self.current_tables)):
         table_select=int(input('Select target table number: '))
@@ -118,14 +103,14 @@ class DBOperations:
     try:
       self.get_connection()
       os.system('cls' if os.name == 'nt' else 'clear')
-      emp = Employee()
-      emp.set_title(str(input("Enter employee title: ")))
-      emp.set_forename(str(input("Enter employee forename: ")))
-      emp.set_surname(str(input("Enter employee surname: ")))
-      emp.set_email(str(input("Enter employee email: ")))
-      emp.set_salary(int(input("Enter employee salary: ")))    
+      title = (str(input("Enter employee title: ")))
+      forename = (str(input("Enter employee forename: ")))
+      surname = (str(input("Enter employee surname: ")))
+      email = (str(input("Enter employee email: ")))
+      salary = (str(input("Enter employee salary: ")))
+      employee_list = [title,forename,surname,email,salary]    
       table = self.current_tables[target_table]
-      self.cur.execute("INSERT INTO "+table+" (Title,Forename,Surname,Email,Salary) VALUES(" + ' "'+'" ,"'.join(str(emp).split('\n')) + '");')
+      self.cur.execute("INSERT INTO "+table+" (Title,Forename,Surname,Email,Salary) VALUES(" + ' "'+'" ,"'.join(employee_list) + '");')
       self.conn.commit()
       print("Inserted data successfully")
       input("Press 'ENTER' to exit: ")
@@ -158,7 +143,7 @@ class DBOperations:
       self.get_connection()
       os.system('cls' if os.name == 'nt' else 'clear')
       terms = {1: "EmployeeID", 2: "Title", 3:"Forename",4:"Surname",5:"Email",6:"Salary"}
-      print ("*****************************************************************")
+      print ("*"*30 + "\n")
       print("Select attribute to search by: \n")
       print (" 1. Employee ID")
       print (" 2. Employee Title")
@@ -174,7 +159,7 @@ class DBOperations:
       os.system('cls' if os.name == 'nt' else 'clear')
       if int(key) == 6:
         mods = {1: " > ", 2: " >= ", 3: " = ", 4:" < ", 5:" <= "}
-        print ("*****************************************************************")
+        print ("*"*30 + "\n")
         print("Choose search modifier: \n")
         print(" 1. Salary GREATER than VALUE")
         print(" 2. Salary GREATER than OR EQUAL to VALUE")
@@ -209,7 +194,7 @@ class DBOperations:
     try:
       self.get_connection()
       os.system('cls' if os.name == 'nt' else 'clear')
-      print ("*****************************************************************\n")
+      print ("*"*30 + "\n")
       print("Please enter the employee ID for the record that you would like to UPDATE : ")
       empID = int(input("Employee ID: "))
       table = self.current_tables[target_table]     
@@ -251,16 +236,17 @@ class DBOperations:
           terms['Salary']=str(input("Enter updated value: "))
     
 
-        sqlStatement = "UPDATE "+table+" SET "
+        sqlStatement = "UPDATE "+str(table)+" SET "
         for key in terms:
           if terms[key]:
-            sqlStatement += (str(key)+'="'+str(terms[key])+'", ')
+            sqlStatement += (str(key)+"='"+str(terms[key])+"', ")
         sqlStatement = sqlStatement[:-2]
-        sqlStatement += (' WHERE EmployeeID = ' + str(empID)+' RETURNING *;')  
-        print(sqlStatement)
+        sqlStatement += (" WHERE EmployeeID = '" + str(empID)+"';")  
         self.cur.execute(sqlStatement)
-        result = self.cur.fetchone()
-        if type(result)==type(tuple()):
+        self.cur.execute("SELECT * FROM "+table+" WHERE EmployeeID="+str(empID)+";")
+        check = self.cur.fetchone()
+        print(result)
+        if result != check:
           self.conn.commit()
           printHeaderSingle(result)
           print("Employees updated.")
@@ -280,13 +266,15 @@ class DBOperations:
       self.conn.close()
  
   def delete_data(self):
+    global target_table
     try:
       self.get_connection()
       os.system('cls' if os.name == 'nt' else 'clear')
-      print ("*****************************************************************\n")
+      print ("*"*30 + "\n")
       print("Please enter the employee ID for the record that you would like to DELETE : ")
       empID = int(input("Employee ID: "))
-      self.cur.execute(self.sql_search+"EmployeeID="+str(empID)+";")
+      table = self.current_tables[target_table]     
+      self.cur.execute("SELECT * FROM "+str(table)+" WHERE EmployeeID="+str(empID)+";")
       result = self.cur.fetchone()
       if type(result)==type(tuple()):
         print ("Employee found")
@@ -295,7 +283,7 @@ class DBOperations:
         while answer not in ['y','n']:
           answer =input("Do you want to DELETE this record? (y/n): ")
         if answer == 'y':
-          self.cur.execute(self.sql_delete_data+'WHERE EmployeeID='+ str(empID)+';')
+          self.cur.execute("DELETE FROM "+table+' WHERE EmployeeID='+ str(empID)+';')
           self.conn.commit()
           printHeaderSingle(result)
           print("Record deleted.")
@@ -316,7 +304,7 @@ class DBOperations:
     try:
       self.get_connection()
       os.system('cls' if os.name == 'nt' else 'clear')
-      print ("*****************************************************************\n")
+      print ("*"*30 + "\n")
       self.current_tables = self.get_current_tables()
       print('1. Delete a single table')
       print('2. Delete all tables (reset the Database)')
@@ -358,47 +346,6 @@ class DBOperations:
       input("press 'ENTER' to exit." )
       self.conn.close()
 
-class Employee:
-  def __init__(self):
-    self.Title = ''
-    self.forename = ''
-    self.surname = ''
-    self.email = ''
-    self.salary = 0
-
-  def set_title(self, Title):
-    self.Title = Title
-
-  def set_forename(self,forename):
-   self.forename = forename
-  
-  def set_surname(self,surname):
-    self.surname = surname
-
-  def set_email(self,email):
-    self.email = email
-  
-  def set_salary(self,salary):
-    self.salary = salary
-
-  def get_title(self):
-    return self.Title
-  
-  def get_forename(self):
-    return self.forename
-  
-  def get_surname(self):
-    return self.surname
-  
-  def get_email(self):
-    return self.email
-  
-  def get_salary(self):
-    return self.salary
-
-  def __str__(self):
-    return str(self.Title+"\n"+ self.forename+"\n"+self.surname+"\n"+self.email+"\n"+str(self.salary))
-
 # Various Print Statements
 
 def printHeader():
@@ -435,10 +382,7 @@ def printHeaderMultiple(results):
     salary=str(result[5])
     print('|| '+ id+ ((2-len(id))*' ')+' || '+title[:5]+((5-len(title))*' ')+' || '+forename[:8]+((8-len(forename))*' ')+' ||   '+surname[:11]+((11-len(surname))*' ')+'   ||        '+email[:19]+((19-len(email))*' ')+'        ||  '+salary[:8]+((8-len(salary))*' ')+'  || ')
     print("===================================================================================================")
-# The main function will parse arguments. 
-# These argument will be definded by the users on the console.
-# The user will select a choice from the menu to interact with the database.
-  
+
 while True:
   os.system('cls' if os.name == 'nt' else 'clear')
 
@@ -447,7 +391,7 @@ while True:
   print("Current Table: " + str(result[target_table]))
 
   print ("\n Menu:")
-  print ("*****************************************************************\n")
+  print ("*"*30 + "\n")
   print (" 1. Create New Table")
   print (" 2. Change Table")
   print (" 3. Add New Employee")
